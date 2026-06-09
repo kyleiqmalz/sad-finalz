@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CI-Notes System</title>
+    <style>
+        /* Base Themes & Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* CI-001: Login Screen Overlay */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .login-card {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .login-card h2 {
+            margin-bottom: 10px;
+            color: #006644; /* IIUM Style Green */
+        }
+
+        .login-card p {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .cas-btn {
+            background-color: #006644;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .cas-btn:hover {
+            background-color: #004d33;
+        }
+
+        /* Main Layout (Dashboard) */
+        #dashboard-layout {
+            display: none; /* Hidden until login */
+            width: 100%;
+            height: 100%;
+            grid-template-columns: 260px 1fr;
+        }
+
+        /* Sidebar Navigation */
+        sidebar {
+            background-color: #1e293b;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            font-size: 22px;
+            letter-spacing: 1px;
+            color: #38bdf8;
+            margin-bottom: 30px;
+        }
+
+        .nav-links {
+            list-style: none;
+            flex-grow: 1;
+        }
+
+        .nav-links li {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-weight: 500;
+        }
+
+        .nav-links li:hover, .nav-links li.active {
+            background-color: #334155;
+            color: #38bdf8;
+        }
+
+        .user-profile {
+            border-top: 1px solid #334155;
+            padding-top: 15px;
+            font-size: 14px;
+        }
+
+        /* Main Content Container */
+        main {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Header (CI-005 Search & CI-004 Notifications) */
+        header {
+            background-color: #ffffff;
+            height: 70px;
+            padding: 0 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            width: 400px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #ef4444;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 50%;
+        }
+
+        /* Alert Notification Banner (CI-004 Trigger Simulation) */
+        .alert-banner {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+            padding: 12px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        /* Content Area Panels */
+        .content-panel {
+            padding: 30px;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .content-panel.active {
+            display: block;
+        }
+
+        /* CI-002: Manage Notes Styles */
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .note-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-top: 4px solid #3b82f6;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 150px;
+        }
+
+        .note-card p {
+            color: #4b5563;
+            font-size: 15px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .note-actions {
+            margin-top: 15px;
+            text-align: right;
+        }
+
+        .btn-danger {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        /* Kanban Board Styles */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            height: calc(100% - 60px);
+            align-items: start;
+        }
+
+        .kanban-column {
+            background-color: #edf2f7;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 400px;
+            max-height: 100%;
+            overflow-y: auto;
+        }
+
+        .kanban-column h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .task-list {
+            min-height: 350px;
+        }
+
+        .task-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            cursor: grab;
+            border-left: 4px solid #10b981;
+        }
+
+        .task-card:active {
+            cursor: grabbing;
+        }
+
+        .task-card h4 {
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+
+        .task-card p {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* Modal Overlay System */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .modal.open {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .modal-buttons {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>CI-Notes System</h2>
+            <p>Welcome! Please authenticate using your institution credentials.</p>
+            <button class="cas-btn" onclick="simulateLogin()">Login using IIUM CAS</button>
+        </div>
+    </div>
+
+    <div id="dashboard-layout">
+        
+        <sidebar>
+            <div class="brand">
+                <h1>CI-Notes</h1>
+                <ul class="nav-links">
+                    <li id="nav-notes" class="active" onclick="switchTab('notes')">📝 Notes</li>
+                    <li id="nav-tasks" onclick="switchTab('tasks')">📋 Kanban Task Board</li>
+                </ul>
+            </div>
+            <div class="user-profile">
+                <strong>Actor:</strong> IIUM Student<br>
+                <small style="color: #94a3b8">Status: Authenticated</small>
+            </div>
+        </sidebar>
+
+        <main>
+            <header>
+                <div class="search-box">
+                    <input type="text" id="searchBar" placeholder="Search notes and tasks..." onkeyup="executeSearch()">
+                </div>
+                <div class="header-actions">
+                    <div class="notification-bell" onclick="toggleAlertSimulation()">
+                        🔔 <span class="badge" id="noti-count">1</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="alert-banner" id="deadlineAlert">
+                <span><strong>⚠️ Deadline Approaching:</strong> Your task "Submit Assignment 1" is expiring soon!</span>
+                <button onclick="dismissAlert()" style="background:none; border:none; cursor:pointer; font-weight:bold;">×</button>
+            </div>
+
+            <div id="panel-notes" class="content-panel active">
+                <div class="notes-header">
+                    <h2>My Shared Notes</h2>
+                    <button class="btn-primary" onclick="openModal('noteModal')">+ Add Note</button>
+                </div>
+                <div class="notes-grid" id="notesContainer">
+                    </div>
+            </div>
+
+            <div id="panel-tasks" class="content-panel">
+                <div class="notes-header">
+                    <h2>Kanban Task Tracking</h2>
+                    <button class="btn-primary" onclick="openModal('taskModal')">+ Add Task</button>
+                </div>
+                <div class="kanban-board">
+                    <div class="kanban-column">
+                        <h3>To Do</h3>
+                        <div class="task-list" id="todo-col" ondragover="allowDrop(event)" ondrop="drop(event)">
+                            <div class="task-card" draggable="true" ondragstart="drag(event)" id="task-1">
+                                <h4>Submit Assignment 1</h4>
+                                <p>Subject: Software Engineering</p>
+                                <p><small>⏱ Due: Tomorrow</small></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kanban-column">
+                        <h3>In Progress</h3>
+                        <div class="task-list" id="progress-col" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+                    </div>
+                    <div class="kanban-column">
+                        <h3>Done</h3>
+                        <div class="task-list" id="done-col" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="noteModal">
+        <div class="modal-content">
+            <h3>Create New System Note</h3>
+            <div class="form-group">
+                <label>Note Content Text</label>
+                <textarea id="noteContent" rows="4" placeholder="Type your note content details..."></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="closeModal('noteModal')">Cancel</button>
+                <button class="btn-primary" onclick="saveNote()">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <h3>Add New Task Card</h3>
+            <div class="form-group">
+                <label>Task Title / Requirements</label>
+                <input type="text" id="taskTitle" placeholder="e.g. Study Quiz 2 Concepts">
+            </div>
+            <div class="form-group">
+                <label>Subject / Area Context</label>
+                <input type="text" id="taskSubject" placeholder="e.g. Enterprise Architecture">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="closeModal('taskModal')">Cancel</button>
+                <button class="btn-primary" onclick="saveTask()">Save Task Card</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // mock management repositories
+        let notesData = [
+            { id: 1, content: "Review UI/UX prototyping rules before submission guidelines change next week." },
+            { id: 2, content: "Remember to use institutional CAS credentials profiles configuration to access system architecture endpoints." }
+        ];
+        
+        let taskIdCounter = 2;
+
+        // CI-001: Portal Login Route Simulation 
+        function simulateLogin() {
+            document.getElementById('login-screen').style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('dashboard-layout').style.display = 'grid';
+                renderNotes();
+            }, 300);
+        }
+
+        // Dashboard Screen View Route Controller Tabs Switcher
+        function switchTab(tabName) {
+            document.querySelectorAll('.content-panel').forEach(panel => panel.classList.remove('active'));
+            document.querySelectorAll('.nav-links li').forEach(link => link.classList.remove('active'));
+            
+            if(tabName === 'notes') {
+                document.getElementById('panel-notes').classList.add('active');
+                document.getElementById('nav-notes').classList.add('active');
+            } else {
+                document.getElementById('panel-tasks').classList.add('active');
+                document.getElementById('nav-tasks').classList.add('active');
+            }
+        }
+
+
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        // ci-002
+        function renderNotes() {
+            const container = document.getElementById('notesContainer');
+            container.innerHTML = '';
+            notesData.forEach(note => {
+                container.innerHTML += `
+                    <div class="note-card" data-content="${note.content.toLowerCase()}">
+                        <p>${note.content}</p>
+                        <div class="note-actions">
+                            <button class="btn-danger" onclick="deleteNote(${note.id})">🗑 Delete Note</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function saveNote() {
+            const txt = document.getElementById('noteContent').value;
+            if(!txt.trim()) return alert("Content cannot be completely empty.");
+            
+            notesData.push({ id: Date.now(), content: txt });
+            document.getElementById('noteContent').value = '';
+            closeModal('noteModal');
+            renderNotes();
+        }
+
+        function deleteNote(id) {
+            notesData = notesData.filter(n => n.id !== id);
+            renderNotes();
+        }
+
+        // ci-003
+        function saveTask() {
+            const title = document.getElementById('taskTitle').value;
+            const subject = document.getElementById('taskSubject').value;
+            if(!title.trim()) return alert("Task criteria metrics required.");
+
+            const id = 'task-' + taskIdCounter++;
+            const cardHTML = `
+                <div class="task-card" draggable="true" ondragstart="drag(event)" id="${id}">
+                    <h4>${title}</h4>
+                    <p>Subject: ${subject || 'General'}</p>
+                    <p><small>⏱ Due: Pending</small></p>
+                </div>
+            `;
+            document.getElementById('todo-col').insertAdjacentHTML('beforeend', cardHTML);
+            
+            // reset input
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskSubject').value = '';
+            closeModal('taskModal');
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+        function drop(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+
+            let targetList = ev.target;
+            if (!targetList.classList.contains('task-list')) {
+                targetList = targetList.closest('.task-list');
+            }
+            if(targetList) {
+                targetList.appendChild(draggedElement);
+            }
+        }
+
+        // ci-004
+        function dismissAlert() {
+            document.getElementById('deadlineAlert').style.display = 'none';
+            document.getElementById('noti-count').innerText = '0';
+        }
+
+        function toggleAlertSimulation() {
+            const banner = document.getElementById('deadlineAlert');
+            if (banner.style.display === 'none') {
+                banner.style.display = 'flex';
+                document.getElementById('noti-count').innerText = '1';
+            } else {
+                dismissAlert();
+            }
+        }
+
+        // ci-005
+        function executeSearch() {
+            const value = document.getElementById('searchBar').value.toLowerCase();
+            
+            // filter notes
+            document.querySelectorAll('.note-card').forEach(card => {
+                const text = card.getAttribute('data-content');
+                card.style.display = text.includes(value) ? 'flex' : 'none';
+            });
+
+            // filter task 
+            document.querySelectorAll('.task-card').forEach(card => {
+                const text = card.innerText.toLowerCase();
+                card.style.display = text.includes(value) ? 'block' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
