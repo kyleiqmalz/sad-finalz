@@ -33,6 +33,8 @@ Because this prototype is entirely self-contained, it requires zero installation
 2. Open the File: Double-click the saved file or drag and drop it into any modern web browser (e.g., Google Chrome, Mozilla Firefox, Microsoft Edge, or Apple Safari).<br>
 3. Interact: Step through the login path to enter the workspace, then feel free to draft notes, schedule tasks, drag them across columns, or test the live search functionality.<br>
 
+or just click this link: https://kyleiqmalz.github.io/sad-finalz/
+
 
 <h2>🎨 Tech Stack & Architecture</h2><br>
 1. Markup: Clean, semantic semantic HTML5 structures (<sidebar>, <main>, <header>).<br>
